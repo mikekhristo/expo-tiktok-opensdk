@@ -1,1 +1,1 @@
-module.exports = require('./plugin/build/withTikTokOpenSDK');
+module.exports = require('./plugin/build/withTikTokOpenSDK').default;

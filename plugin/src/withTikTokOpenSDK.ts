@@ -1,6 +1,8 @@
-import { ConfigPlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } from '@expo/config-plugins';
+import { ConfigPlugin, createRunOncePlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } from '@expo/config-plugins';
+import { ExpoConfig } from '@expo/config-types';
 
 const { addMetaDataItemToMainApplication, getMainApplicationOrThrow } = AndroidConfig.Manifest;
+const pkg = require('../../package.json');
 
 interface TikTokOpenSDKPluginProps {
   iosClientKey: string;
@@ -15,28 +17,53 @@ const withTikTokOpenSDKAndroid: ConfigPlugin<TikTokOpenSDKPluginProps> = (config
     const mainApplication = getMainApplicationOrThrow(config.modResults);
 
     // Add TikTok SDK activities
-    mainApplication.activity = mainApplication.activity || [];
-    mainApplication.activity.push({
-      $: {
-        'android:name': 'com.tiktok.open.sdk.share.ShareActivity',
-        'android:exported': 'true',
-        'android:launchMode': 'singleTask'
-      }
-    });
+    if (!Array.isArray(mainApplication.activity)) {
+      mainApplication.activity = [];
+    }
 
-    // Add TikTok SDK metadata
-    addMetaDataItemToMainApplication(
-      config.modResults,
-      'com.bytedance.sdk.appKey',
-      props.androidClientKey
+    const hasShareActivity = mainApplication.activity.some(
+      activity => activity.$?.['android:name'] === 'com.tiktok.open.sdk.share.ShareActivity'
     );
 
-    if (props.scheme) {
+    if (!hasShareActivity) {
+      mainApplication.activity.push({
+        $: {
+          'android:name': 'com.tiktok.open.sdk.share.ShareActivity',
+          'android:exported': 'true',
+          'android:launchMode': 'singleTask'
+        }
+      });
+    }
+
+    // Add TikTok SDK metadata
+    if (!mainApplication['meta-data']) {
+      mainApplication['meta-data'] = [];
+    }
+
+    const appKeyMetadata = mainApplication['meta-data'].find(
+      item => item.$?.['android:name'] === 'com.bytedance.sdk.appKey'
+    );
+
+    if (!appKeyMetadata) {
       addMetaDataItemToMainApplication(
-        config.modResults,
-        'com.bytedance.sdk.scheme',
-        props.scheme
+        mainApplication,
+        'com.bytedance.sdk.appKey',
+        props.androidClientKey
       );
+    }
+
+    if (props.scheme) {
+      const schemeMetadata = mainApplication['meta-data'].find(
+        item => item.$?.['android:name'] === 'com.bytedance.sdk.scheme'
+      );
+
+      if (!schemeMetadata) {
+        addMetaDataItemToMainApplication(
+          mainApplication,
+          'com.bytedance.sdk.scheme',
+          props.scheme
+        );
+      }
     }
 
     return config;
@@ -46,22 +73,43 @@ const withTikTokOpenSDKAndroid: ConfigPlugin<TikTokOpenSDKPluginProps> = (config
 const withTikTokOpenSDKIOS: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props) => {
   return withInfoPlist(config, (config) => {
     // Add URL schemes
-    config.modResults.CFBundleURLTypes = config.modResults.CFBundleURLTypes || [];
-    config.modResults.CFBundleURLTypes.push({
-      CFBundleURLSchemes: [
-        `tiktok${props.iosClientKey}`,
-        props.scheme,
-        props.redirectScheme
-      ].filter(Boolean)
-    });
+    if (!Array.isArray(config.modResults.CFBundleURLTypes)) {
+      config.modResults.CFBundleURLTypes = [];
+    }
+
+    const urlSchemes: string[] = [`tiktok${props.iosClientKey}`];
+    if (props.scheme) urlSchemes.push(props.scheme);
+    if (props.redirectScheme) urlSchemes.push(props.redirectScheme);
+
+    // Check if URL type already exists
+    const existingUrlType = config.modResults.CFBundleURLTypes.find(
+      urlType => urlType.CFBundleURLSchemes?.includes(`tiktok${props.iosClientKey}`)
+    );
+
+    if (!existingUrlType) {
+      config.modResults.CFBundleURLTypes.push({
+        CFBundleURLSchemes: urlSchemes
+      });
+    }
 
     // Add LSApplicationQueriesSchemes
-    config.modResults.LSApplicationQueriesSchemes = [
-      ...(config.modResults.LSApplicationQueriesSchemes || []),
+    const querySchemes = [
       'tiktokopensdk',
       'tiktoksharesdk',
       'snssdk1128',
       'snssdk1233'
+    ];
+
+    if (!Array.isArray(config.modResults.LSApplicationQueriesSchemes)) {
+      config.modResults.LSApplicationQueriesSchemes = [];
+    }
+
+    // Add only unique schemes
+    config.modResults.LSApplicationQueriesSchemes = [
+      ...new Set([
+        ...config.modResults.LSApplicationQueriesSchemes,
+        ...querySchemes
+      ])
     ];
 
     // Add Universal Links if provided
@@ -89,4 +137,4 @@ const withTikTokOpenSDK: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props
   ]);
 };
 
-export = withTikTokOpenSDK;
+export default createRunOncePlugin(withTikTokOpenSDK, pkg.name, pkg.version);
