@@ -3,7 +3,7 @@ require 'json'
 package = JSON.parse(File.read(File.join(__dir__, '..', 'package.json')))
 
 Pod::Spec.new do |s|
-  s.name           = 'ExpoTikTokOpenSDK'
+  s.name           = 'ExpoTikTokOpenSDKModule'
   s.version        = package['version']
   s.summary        = package['description']
   s.description    = package['description']
@@ -11,11 +11,12 @@ Pod::Spec.new do |s|
   s.author         = package['author']
   s.homepage       = package['homepage']
   s.platform       = :ios, '13.0'
-  s.source         = { git: '' }
+  s.swift_version  = '5.4'
+  s.source         = { git: package['repository']['url'] }
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.dependency 'TikTokOpenSDK', '~> 5.0.14'  # Using latest version from TikTok docs
+  s.dependency 'TikTokOpenSDK', '~> 5.0.14'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {

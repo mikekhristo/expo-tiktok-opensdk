@@ -2,6 +2,12 @@ import ExpoModulesCore
 import TikTokOpenSDK
 
 public class ExpoTikTokOpenSDKModule: Module {
+    // Register the module with Expo
+    public static func register(in context: ModuleRegistryContext) {
+        let module = ExpoTikTokOpenSDKModule()
+        context.register(module)
+    }
+    
     public func definition() -> ModuleDefinition {
         Name("ExpoTikTokOpenSDK")
 
@@ -22,60 +28,58 @@ public class ExpoTikTokOpenSDKModule: Module {
                     request.localIdentifiers = urls.map { $0.path }
                 }
                 
-                // Set hashtags and description
+                // Add hashtags and description
                 if !hashtags.isEmpty {
-                    request.hashtags = hashtags
+                    request.hashtag = hashtags.joined(separator: " ")
                 }
-                if !description.isEmpty {
-                    request.landedPageTitle = description
-                }
+                request.landedPageType = isGreenScreen ? .greenScreen : .edit
+                request.state = "state"
                 
-                // Configure green screen if needed
-                if isGreenScreen {
-                    request.shareFormat = .greenScreen
-                }
-                
-                // Send share request
+                // Send request
                 request.send { response in
-                    if response.isSucceed {
-                        promise.resolve([
-                            "isSuccess": true
-                        ])
+                    if let error = response.error {
+                        promise.reject(
+                            "SHARE_ERROR",
+                            error.localizedDescription,
+                            error
+                        )
                     } else {
                         promise.resolve([
-                            "isSuccess": false,
+                            "isSuccess": response.isSucceed,
                             "errorCode": response.errorCode,
                             "shareState": response.shareState?.rawValue ?? 0,
-                            "errorMsg": response.errorMsg ?? "Unknown error"
+                            "errorMsg": response.errorMsg ?? ""
                         ])
                     }
                 }
             }
         }
-
-        Function("auth") { (permissions: [String]?, state: String?) -> [String: Any] in
+        
+        Function("isAppInstalled") { () -> Bool in
+            return TikTokOpenSDKShareRequest.isAppInstalled()
+        }
+        
+        Function("auth") { (permissions: [String]) -> [String: Any] in
             return try await withPromise { promise in
                 let request = TikTokOpenSDKAuthRequest()
-                if let perms = permissions {
-                    request.permissions = perms
-                }
-                if let st = state {
-                    request.state = st
-                }
+                request.permissions = permissions
+                request.state = "state"
                 
                 request.send { response in
-                    if response.isSucceed {
+                    if let error = response.error {
+                        promise.reject(
+                            "AUTH_ERROR",
+                            error.localizedDescription,
+                            error
+                        )
+                    } else {
                         promise.resolve([
-                            "isSuccess": true,
+                            "isSuccess": response.isSucceed,
+                            "errorCode": response.errorCode,
+                            "errorMsg": response.errorMsg ?? "",
                             "authCode": response.code ?? "",
                             "state": response.state ?? "",
                             "grantedPermissions": response.grantedPermissions ?? []
-                        ])
-                    } else {
-                        promise.resolve([
-                            "isSuccess": false,
-                            "errorCode": response.errorCode,
-                            "errorMsg": response.errorMsg ?? "Unknown error"
                         ])
                     }
                 }

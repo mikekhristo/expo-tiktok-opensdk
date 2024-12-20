@@ -1,5 +1,7 @@
-import { ConfigPlugin, createRunOncePlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } from '@expo/config-plugins';
+import { ConfigPlugin, createRunOncePlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig, withDangerousMod } from '@expo/config-plugins';
 import { ExpoConfig } from '@expo/config-types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const { addMetaDataItemToMainApplication, getMainApplicationOrThrow } = AndroidConfig.Manifest;
 const pkg = require('../../package.json');
@@ -52,72 +54,60 @@ const withTikTokOpenSDKAndroid: ConfigPlugin<TikTokOpenSDKPluginProps> = (config
       );
     }
 
-    if (props.scheme) {
-      const schemeMetadata = mainApplication['meta-data'].find(
-        item => item.$?.['android:name'] === 'com.bytedance.sdk.scheme'
-      );
-
-      if (!schemeMetadata) {
-        addMetaDataItemToMainApplication(
-          mainApplication,
-          'com.bytedance.sdk.scheme',
-          props.scheme
-        );
-      }
-    }
-
     return config;
   });
 };
 
 const withTikTokOpenSDKIOS: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props) => {
-  return withInfoPlist(config, (config) => {
+  return withInfoPlist(config, config => {
+    const infoPlist = config.modResults;
+
     // Add URL schemes
-    if (!Array.isArray(config.modResults.CFBundleURLTypes)) {
-      config.modResults.CFBundleURLTypes = [];
+    if (!Array.isArray(infoPlist.CFBundleURLTypes)) {
+      infoPlist.CFBundleURLTypes = [];
     }
 
-    const urlSchemes: string[] = [`tiktok${props.iosClientKey}`];
-    if (props.scheme) urlSchemes.push(props.scheme);
-    if (props.redirectScheme) urlSchemes.push(props.redirectScheme);
+    const urlSchemes = new Set<string>();
+    if (props.scheme) {
+      urlSchemes.add(props.scheme);
+    }
+    if (props.redirectScheme) {
+      urlSchemes.add(props.redirectScheme);
+    }
 
-    // Check if URL type already exists
-    const existingUrlType = config.modResults.CFBundleURLTypes.find(
-      urlType => urlType.CFBundleURLSchemes?.includes(`tiktok${props.iosClientKey}`)
+    const hasExistingURLTypes = infoPlist.CFBundleURLTypes.some(
+      (urlType: any) => urlType.CFBundleURLSchemes?.some((scheme: string) => urlSchemes.has(scheme))
     );
 
-    if (!existingUrlType) {
-      config.modResults.CFBundleURLTypes.push({
-        CFBundleURLSchemes: urlSchemes
+    if (!hasExistingURLTypes && urlSchemes.size > 0) {
+      infoPlist.CFBundleURLTypes.push({
+        CFBundleURLSchemes: Array.from(urlSchemes)
       });
     }
 
     // Add LSApplicationQueriesSchemes
-    const querySchemes = [
-      'tiktokopensdk',
-      'tiktoksharesdk',
-      'snssdk1128',
-      'snssdk1233'
-    ];
-
-    if (!Array.isArray(config.modResults.LSApplicationQueriesSchemes)) {
-      config.modResults.LSApplicationQueriesSchemes = [];
+    if (!Array.isArray(infoPlist.LSApplicationQueriesSchemes)) {
+      infoPlist.LSApplicationQueriesSchemes = [];
     }
 
-    // Add only unique schemes
-    config.modResults.LSApplicationQueriesSchemes = [
-      ...new Set([
-        ...config.modResults.LSApplicationQueriesSchemes,
-        ...querySchemes
-      ])
-    ];
+    const tiktokSchemes = ['tiktokopensdk', 'tiktoksharesdk', 'snssdk1180'];
+    const newSchemes = tiktokSchemes.filter(
+      scheme => !infoPlist.LSApplicationQueriesSchemes?.includes(scheme)
+    );
 
-    // Add Universal Links if provided
-    if (props.iosUniversalLink) {
-      const domains = props.iosUniversalLink.replace(/https?:\/\//, '').split('/')[0];
-      config.modResults.com_apple_developer_associated_domains = [
-        `applinks:${domains}`
+    if (newSchemes.length > 0) {
+      infoPlist.LSApplicationQueriesSchemes = [
+        ...(infoPlist.LSApplicationQueriesSchemes || []),
+        ...newSchemes
       ];
+    }
+
+    // Add TikTok client key
+    infoPlist.TikTokClientKey = props.iosClientKey;
+
+    // Add Universal Link if provided
+    if (props.iosUniversalLink) {
+      infoPlist.TikTokUniversalLink = props.iosUniversalLink;
     }
 
     return config;
@@ -125,11 +115,35 @@ const withTikTokOpenSDKIOS: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, pr
 };
 
 const withTikTokOpenSDK: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props) => {
-  if (!props.iosClientKey && !props.androidClientKey) {
-    throw new Error(
-      'Missing required TikTok SDK configuration. Please provide at least one of: iosClientKey or androidClientKey'
-    );
-  }
+  // Register the module in the app's native code
+  config = withDangerousMod(config, [
+    'ios',
+    async (config) => {
+      const projectRoot = config.modRequest.projectRoot;
+      const appDelegateFile = path.join(projectRoot, 'ios', config.modRequest.projectName || '', 'AppDelegate.mm');
+      
+      let contents = fs.readFileSync(appDelegateFile, 'utf-8');
+      
+      // Add import if not present
+      if (!contents.includes('#import <ExpoTikTokOpenSDKModule/ExpoTikTokOpenSDKModule.h>')) {
+        contents = contents.replace(
+          '#import "AppDelegate.h"',
+          '#import "AppDelegate.h"\n#import <ExpoTikTokOpenSDKModule/ExpoTikTokOpenSDKModule.h>'
+        );
+      }
+      
+      // Add module registration if not present
+      if (!contents.includes('[ExpoTikTokOpenSDKModule register')) {
+        contents = contents.replace(
+          '[super application:application didFinishLaunchingWithOptions:launchOptions];',
+          '[ExpoTikTokOpenSDKModule register];\n  [super application:application didFinishLaunchingWithOptions:launchOptions];'
+        );
+      }
+      
+      fs.writeFileSync(appDelegateFile, contents);
+      return config;
+    }
+  ]);
 
   return withPlugins(config, [
     [withTikTokOpenSDKAndroid, props],

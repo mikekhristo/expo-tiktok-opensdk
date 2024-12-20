@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "expo-tiktok-opensdk",
+    "version": "0.1.7",
+    "modules": {
+      "ExpoTikTokOpenSDK": "./src/index"
+    },
+    "plugins": [
+      [
+        "expo-tiktok-opensdk",
+        {
+          "iosClientKey": "YOUR_IOS_CLIENT_KEY",
+          "androidClientKey": "YOUR_ANDROID_CLIENT_KEY",
+          "scheme": "YOUR_SCHEME"
+        }
+      ]
+    ]
+  }
+}

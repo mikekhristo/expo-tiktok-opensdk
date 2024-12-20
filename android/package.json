@@ -1,0 +1,12 @@
+{
+  "name": "expo-tiktok-opensdk-android",
+  "version": "0.1.6",
+  "description": "Android module for expo-tiktok-opensdk",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "author": "Mike Khristo",
+  "license": "MIT",
+  "dependencies": {
+    "expo-modules-core": "^1.5.12"
+  }
+}

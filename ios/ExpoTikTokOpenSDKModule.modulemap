@@ -1,0 +1,6 @@
+framework module ExpoTikTokOpenSDKModule {
+  umbrella header "ExpoTikTokOpenSDKModule.h"
+  
+  export *
+  module * { export * }
+}

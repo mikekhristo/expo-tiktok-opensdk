@@ -1,7 +1,5 @@
-import { requireNativeModule } from 'expo-modules-core';
-import { Platform } from 'react-native';
-
-const TikTokOpenSDKModule = requireNativeModule('ExpoTikTokOpenSDK');
+import ExpoTikTokOpenSDK from './ExpoTikTokOpenSDK';
+import './module';
 
 export type ShareSuccessResult = {
   isSuccess: true;
@@ -9,45 +7,28 @@ export type ShareSuccessResult = {
 
 export type ShareErrorResult = {
   isSuccess: false;
-  errorCode: number;
-  subErrorCode?: number;
-  shareState?: number;
-  errorMsg: string;
+  errorCode?: number;
+  errorMsg?: string;
 };
 
 export type ShareResult = ShareSuccessResult | ShareErrorResult;
 
-export type ShareOptions = {
-  /**
-   * Array of local file URLs to share
-   */
+export interface ShareOptions {
   mediaUrls: string[];
-  /**
-   * Whether the media is an image (default: false)
-   */
   isImage?: boolean;
-  /**
-   * Whether to use green screen effect (default: false)
-   */
   isGreenScreen?: boolean;
-  /**
-   * Optional hashtags to include with the share
-   */
   hashtags?: string[];
-  /**
-   * Optional description for the shared content
-   */
   description?: string;
-};
+}
 
-export type AuthResult = {
+export interface AuthResult {
   isSuccess: boolean;
   errorCode?: number;
   errorMsg?: string;
   authCode?: string;
   state?: string;
   grantedPermissions?: string[];
-};
+}
 
 class TikTokOpenSDK {
   /**
@@ -56,56 +37,13 @@ class TikTokOpenSDK {
    * @returns Promise resolving to share result
    */
   static async share(options: ShareOptions): Promise<ShareResult> {
-    try {
-      const { mediaUrls, isImage = false, isGreenScreen = false, hashtags = [], description = '' } = options;
-
-      if (!mediaUrls.length) {
-        throw new Error('At least one media URL must be provided');
-      }
-
-      if (Platform.OS === 'android') {
-        const result = await TikTokOpenSDKModule.share(
-          mediaUrls,
-          isImage,
-          isGreenScreen,
-          hashtags,
-          description
-        );
-        if (result.isSuccess) {
-          return { isSuccess: true };
-        } else {
-          return {
-            isSuccess: false,
-            errorCode: result.errorCode,
-            subErrorCode: result.subErrorCode,
-            errorMsg: result.errorMsg,
-          };
-        }
-      } else if (Platform.OS === 'ios') {
-        const result = await TikTokOpenSDKModule.share(
-          mediaUrls,
-          isImage,
-          isGreenScreen,
-          hashtags,
-          description
-        );
-        if (result.isSuccess) {
-          return { isSuccess: true };
-        } else {
-          return {
-            isSuccess: false,
-            errorCode: result.errorCode,
-            shareState: result.shareState,
-            errorMsg: result.errorMsg,
-          };
-        }
-      } else {
-        throw new Error('Unsupported platform');
-      }
-    } catch (error) {
-      console.error('Error sharing to TikTok:', error);
-      throw error;
-    }
+    return await ExpoTikTokOpenSDK.share(
+      options.mediaUrls,
+      options.isImage ?? false,
+      options.isGreenScreen ?? false,
+      options.hashtags ?? [],
+      options.description ?? ''
+    );
   }
 
   /**
@@ -113,12 +51,7 @@ class TikTokOpenSDK {
    * @returns Promise<boolean>
    */
   static async isAppInstalled(): Promise<boolean> {
-    try {
-      return await TikTokOpenSDKModule.isAppInstalled();
-    } catch (error) {
-      console.error('Error checking TikTok app installation:', error);
-      return false;
-    }
+    return await ExpoTikTokOpenSDK.isAppInstalled();
   }
 
   /**
@@ -127,12 +60,7 @@ class TikTokOpenSDK {
    * @returns Promise resolving to authentication result
    */
   static async auth(permissions: string[] = ['user.info.basic']): Promise<AuthResult> {
-    try {
-      return await TikTokOpenSDKModule.auth(permissions);
-    } catch (error) {
-      console.error('Error authenticating with TikTok:', error);
-      throw error;
-    }
+    return await ExpoTikTokOpenSDK.auth(permissions);
   }
 }
 

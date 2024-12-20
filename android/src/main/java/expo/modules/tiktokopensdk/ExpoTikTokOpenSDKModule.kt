@@ -6,23 +6,35 @@ import com.bytedance.sdk.open.tiktok.api.TikTokOpenApi
 import com.bytedance.sdk.open.tiktok.share.Share
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.modules.ModuleRegistryConsumer
+import expo.modules.kotlin.modules.ReactModuleInfo
+import expo.modules.kotlin.modules.ReactModuleInfoProvider
 import java.io.File
 
-class ExpoTikTokOpenSDKModule : Module() {
+class ExpoTikTokOpenSDKModule : Module(), ModuleRegistryConsumer, ReactModuleInfoProvider {
     private val context: Context
         get() = requireNotNull(appContext.reactContext)
 
     override fun definition() = ModuleDefinition {
         Name("ExpoTikTokOpenSDK")
 
+        OnCreate {
+            // Initialize TikTok SDK when module is created
+            try {
+                val applicationContext = context.applicationContext
+                TikTokOpenSDK.init(applicationContext)
+            } catch (e: Exception) {
+                // Log initialization error but don't throw
+                println("Failed to initialize TikTok SDK: ${e.message}")
+            }
+        }
+
         Function("share") { mediaUrls: List<String>, isImage: Boolean, isGreenScreen: Boolean, hashtags: List<String>, description: String ->
             return@Function try {
                 val request = Share.Request()
                 
-                // Convert URLs to local files
+                // Set media files
                 val mediaFiles = mediaUrls.map { File(it) }
-                
-                // Configure media type and files
                 if (isImage) {
                     request.setImageList(mediaFiles)
                 } else {
@@ -34,30 +46,23 @@ class ExpoTikTokOpenSDKModule : Module() {
                     request.setHashtagList(hashtags)
                 }
                 if (description.isNotEmpty()) {
-                    request.setTitle(description)
+                    request.title = description
                 }
                 
-                // Configure green screen if needed
+                // Set green screen mode if needed
                 if (isGreenScreen) {
-                    request.setShareFormat(Share.SHARE_FORMAT_GREEN_SCREEN)
+                    request.shareFormat = Share.SHARE_FORMAT_GREEN_SCREEN
                 }
                 
                 // Send share request
-                val api = TikTokOpenApi.getInstance()
-                val response = api.share(context, request)
+                val api: TikTokOpenApi = TikTokOpenSDK.getApi()
+                val response = api.share(request)
                 
-                if (response.isSuccess()) {
-                    mapOf(
-                        "isSuccess" to true
-                    )
-                } else {
-                    mapOf(
-                        "isSuccess" to false,
-                        "errorCode" to response.errorCode,
-                        "subErrorCode" to response.subErrorCode,
-                        "errorMsg" to (response.errorMsg ?: "Unknown error")
-                    )
-                }
+                mapOf(
+                    "isSuccess" to response.isSuccess,
+                    "errorCode" to response.errorCode,
+                    "errorMsg" to (response.errorMsg ?: "")
+                )
             } catch (e: Exception) {
                 mapOf(
                     "isSuccess" to false,
@@ -67,29 +72,27 @@ class ExpoTikTokOpenSDKModule : Module() {
             }
         }
 
-        Function("auth") { permissions: List<String>?, state: String? ->
+        Function("isAppInstalled") {
             return@Function try {
-                val request = com.bytedance.sdk.open.tiktok.authorize.AuthRequest()
-                permissions?.let { request.scope = it.joinToString(",") }
-                state?.let { request.state = it }
+                TikTokOpenSDK.isAppInstalled()
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        Function("auth") { permissions: List<String> ->
+            return@Function try {
+                val api: TikTokOpenApi = TikTokOpenSDK.getApi()
+                val response = api.authorize(permissions)
                 
-                val api = TikTokOpenApi.getInstance()
-                val response = api.authorize(context, request)
-                
-                if (response.isSuccess()) {
-                    mapOf(
-                        "isSuccess" to true,
-                        "authCode" to (response.authCode ?: ""),
-                        "state" to (response.state ?: ""),
-                        "grantedPermissions" to (response.grantedPermissions ?: emptyList<String>())
-                    )
-                } else {
-                    mapOf(
-                        "isSuccess" to false,
-                        "errorCode" to response.errorCode,
-                        "errorMsg" to (response.errorMsg ?: "Unknown error")
-                    )
-                }
+                mapOf(
+                    "isSuccess" to response.isSuccess,
+                    "errorCode" to response.errorCode,
+                    "errorMsg" to (response.errorMsg ?: ""),
+                    "authCode" to (response.authCode ?: ""),
+                    "state" to (response.state ?: ""),
+                    "grantedPermissions" to (response.grantedPermissions ?: emptyList<String>())
+                )
             } catch (e: Exception) {
                 mapOf(
                     "isSuccess" to false,
@@ -98,11 +101,21 @@ class ExpoTikTokOpenSDKModule : Module() {
                 )
             }
         }
+    }
 
-        OnCreate {
-            // Initialize TikTok SDK when the module is created
-            val appContext = requireNotNull(appContext.reactContext)
-            TikTokOpenSDK.init(appContext)
-        }
+    override fun setModuleRegistry(moduleRegistry: Any) {
+        // Register the module
+        moduleRegistry as ModuleRegistry
+        moduleRegistry.registerModule("ExpoTikTokOpenSDK", this)
+    }
+
+    override fun reactModuleInfo(): ReactModuleInfo {
+        return ReactModuleInfo(
+            "ExpoTikTokOpenSDK",
+            "ExpoTikTokOpenSDK",
+            "ExpoTikTokOpenSDK",
+            false,
+            false
+        )
     }
 }
