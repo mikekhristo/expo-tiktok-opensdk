@@ -1,7 +1,4 @@
-const withTikTokOpenSDK = require('./plugin/build/withTikTokOpenSDK').default;
-const ExpoTikTokOpenSDK = require('./build/index').default;
+import withTikTokOpenSDK from './plugin/build/withTikTokOpenSDK.js';
+import ExpoTikTokOpenSDK from './build/index.js';
 
-module.exports = {
-  withTikTokOpenSDK,
-  ExpoTikTokOpenSDK
-};
+export { withTikTokOpenSDK, ExpoTikTokOpenSDK };

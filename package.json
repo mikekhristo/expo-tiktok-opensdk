@@ -1,9 +1,11 @@
 {
   "name": "@mikekhristo/expo-tiktok-opensdk",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Expo module for TikTok OpenSDK (Fork of tiktok-opensdk-react-native)",
-  "main": "index.js",
+  "main": "build/index.js",
+  "module": "build/index.js",
   "types": "build/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "expo-module build && tsc -p plugin/tsconfig.json",
     "clean": "expo-module clean",
