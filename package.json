@@ -5,11 +5,11 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
-    "build": "expo-module build",
+    "build": "expo-module build && tsc -p plugin/tsconfig.json",
     "clean": "expo-module clean",
     "lint": "expo-module lint",
     "test": "expo-module test",
-    "prepare": "expo-module prepare",
+    "prepare": "expo-module prepare && tsc -p plugin/tsconfig.json",
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module"
   },

@@ -1,5 +1,5 @@
-import { ConfigPlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } from '@expo/config-plugins';
-import { ExpoConfig } from '@expo/config-types';
+const { ConfigPlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } = require('@expo/config-plugins');
+const { ExpoConfig } = require('@expo/config-types');
 
 const { addMetaDataItemToMainApplication, getMainApplicationOrThrow } = AndroidConfig.Manifest;
 
@@ -90,4 +90,4 @@ const withTikTokOpenSDK: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props
   ]);
 };
 
-export default withTikTokOpenSDK;
+module.exports = withTikTokOpenSDK;
