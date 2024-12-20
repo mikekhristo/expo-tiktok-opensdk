@@ -1,15 +1,14 @@
-const { ConfigPlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } = require('@expo/config-plugins');
-const { ExpoConfig } = require('@expo/config-types');
+import { ConfigPlugin, withPlugins, withInfoPlist, withAndroidManifest, AndroidConfig } from '@expo/config-plugins';
 
 const { addMetaDataItemToMainApplication, getMainApplicationOrThrow } = AndroidConfig.Manifest;
 
-type TikTokOpenSDKPluginProps = {
+interface TikTokOpenSDKPluginProps {
   iosClientKey: string;
   androidClientKey: string;
   iosUniversalLink?: string;
   scheme?: string;
   redirectScheme?: string;
-};
+}
 
 const withTikTokOpenSDKAndroid: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props) => {
   return withAndroidManifest(config, async (config) => {
@@ -90,4 +89,4 @@ const withTikTokOpenSDK: ConfigPlugin<TikTokOpenSDKPluginProps> = (config, props
   ]);
 };
 
-module.exports = withTikTokOpenSDK;
+export = withTikTokOpenSDK;
