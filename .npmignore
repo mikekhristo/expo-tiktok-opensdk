@@ -1,0 +1,13 @@
+# Exclude everything by default
+*
+
+# Include necessary files
+!android/**/*
+!ios/**/*
+!src/**/*
+!plugin/**/*
+!build/**/*
+!app.plugin.js
+!package.json
+!README.md
+!tsconfig.json

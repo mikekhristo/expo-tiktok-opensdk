@@ -1,1 +1,1 @@
-module.exports = require('./plugin/src/withTikTokOpenSDK');
+module.exports = require('./plugin/src/withTikTokOpenSDK.ts');
