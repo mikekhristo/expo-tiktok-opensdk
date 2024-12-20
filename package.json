@@ -1,6 +1,6 @@
 {
   "name": "@mikekhristo/expo-tiktok-opensdk",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Expo module for TikTok OpenSDK (Fork of tiktok-opensdk-react-native)",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -57,7 +57,10 @@
     "react-native": "*"
   },
   "expo": {
-    "moduleType": ["plugin", "module"],
+    "moduleType": [
+      "plugin",
+      "module"
+    ],
     "platforms": [
       "ios",
       "android"
