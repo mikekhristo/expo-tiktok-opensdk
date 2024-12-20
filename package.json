@@ -1,0 +1,65 @@
+{
+  "name": "@mikekhristo/expo-tiktok-opensdk",
+  "version": "0.1.0",
+  "description": "Expo module for TikTok OpenSDK (Fork of tiktok-opensdk-react-native)",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test",
+    "prepare": "expo-module prepare",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "expo-module": "expo-module"
+  },
+  "keywords": [
+    "expo",
+    "react-native",
+    "tiktok",
+    "sdk",
+    "sharing",
+    "social-media",
+    "video-sharing",
+    "expo-module"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikekhristo/expo-tiktok-opensdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mikekhristo/expo-tiktok-opensdk/issues"
+  },
+  "author": "Mike Khristo",
+  "contributors": [
+    {
+      "name": "React Native Heroes",
+      "email": "eenestatli@gmail.com",
+      "url": "https://github.com/rnheroes"
+    }
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/mikekhristo/expo-tiktok-opensdk#readme",
+  "dependencies": {
+    "expo-modules-core": "^1.5.12"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.25",
+    "@types/react-native": "^0.70.6",
+    "expo-module-scripts": "^3.0.11",
+    "expo-modules-core": "^1.5.12",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "expo": {
+    "moduleType": "plugin",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  }
+}
