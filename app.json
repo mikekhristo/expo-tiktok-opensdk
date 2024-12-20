@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "expo-tiktok-opensdk",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "modules": {
       "ExpoTikTokOpenSDK": "./src/index"
     },
